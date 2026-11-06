@@ -1,0 +1,33 @@
+[package]
+name = "ccwatch"
+version = "0.2.0"
+edition = "2021"
+description = "Живой монитор сессий Claude Code: план, токены, субагенты, советы по экономии"
+
+[dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+crossterm = "0.28"
+indexmap = "2"
+memchr = "2"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+# preserve_order — чтобы settings.json после правки сохранял порядок ключей, как в Node-версии
+serde_json = { version = "1", features = ["preserve_order"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_System_Console",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_ProcessStatus",
+    "Win32_System_Threading",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

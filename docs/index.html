@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ccwatch — терминальный монитор сессий Claude Code. Установка, подключение хука, планы, токены, советы и клавиатурное управление.">
+  <meta name="color-scheme" content="dark">
+  <title>ccwatch — инструкция по использованию</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#guide">Перейти к инструкции</a>
+  <header><a class="brand" href="#"><span class="signal" aria-hidden="true"></span>ccwatch<span class="version">v0.2.0</span></a><a href="https://github.com/SWDevStudio/ccwatch">Код на GitHub ↗</a></header>
+  <div class="layout">
+    <aside aria-label="Навигация по инструкции">
+      <p class="eyebrow">РУКОВОДСТВО</p>
+      <nav>
+        <a href="#overview">Что показывает монитор</a>
+        <a href="#install">01 / Установка</a>
+        <a href="#start">02 / Первый запуск</a>
+        <a href="#hook">03 / Подключение хука</a>
+        <a href="#daily">04 / Работа с сессией</a>
+        <a href="#commands">Команды запуска</a>
+        <a href="#keys">Клавиши</a>
+        <a href="#data">Данные и настройки</a>
+        <a href="#troubleshooting">Решение проблем</a>
+        <a href="#update">Обновление</a>
+      </nav>
+      <p class="aside-note">Работает с локальными данными Claude Code.<br>Отдельный API-ключ для монитора не нужен.</p>
+    </aside>
+    <main id="guide">
+      <section class="hero" id="overview">
+        <p class="eyebrow">CLAUDE CODE · ТЕРМИНАЛЬНЫЙ МОНИТОР</p>
+        <h1>Сессии перед глазами.<br><span>Работа под контролем.</span></h1>
+        <p class="intro">Смотрите, над чем работает агент, на каком он шаге и куда уходят токены. ccwatch собирает планы, субагентов и советы в одном терминале.</p>
+        <div class="hero-links"><a class="button" href="#install">Установить и запустить <span aria-hidden="true">↓</span></a><a href="#keys">Все клавиши ↗</a></div>
+        <figure class="terminal">
+          <div class="terminal-head"><span aria-hidden="true">● ● ●</span><span>ccwatch / пример карточки</span></div>
+          <pre aria-label="Условный пример экрана ccwatch"><code><span class="green">●</span> my-project                         работает
+  Claude Code · главный агент + субагенты
+
+  <span class="green">━━━━━━━━━━━━</span>────────────  1 из 3
+
+  <span class="green">✓</span> Изучить проект                     ~5м
+  <span class="accent">▶ Добавить страницу документации      ~15м</span>
+  · Проверить ссылки и команды          ~5м
+
+  Токены       выход       вход      из кэша
+  главный      4.2k        8.1k        42.0k
+
+  Enter план · s советы · i скиллы · m написать</code></pre>
+          <figcaption>Иллюстрация интерфейса. Названия, числа и оценки приведены для примера.</figcaption>
+        </figure>
+        <div class="features"><div><strong>План и время</strong><p>Текущий шаг, выполненные задачи и прогноз по оценкам агента.</p></div><div><strong>Токены и агенты</strong><p>Вход, выход, кэш и разбивка работы субагентов.</p></div><div><strong>Советы по журналам</strong><p>Что можно изменить в работе агента и настройках Claude Code.</p></div></div>
+      </section>
+
+      <section id="install">
+        <p class="eyebrow">ШАГ 01</p><h2>Соберите программу</h2>
+        <p>Установите <a href="https://git-scm.com/downloads">Git</a> и <a href="https://www.rust-lang.org/tools/install">Rust с Cargo</a>. На Windows для стандартного MSVC toolchain нужны Visual Studio Build Tools с компонентами C++ и Windows SDK. После установки откройте новый терминал.</p>
+        <div class="code-title">Получить исходники и собрать</div>
+        <pre><code>git clone https://github.com/SWDevStudio/ccwatch.git
+cd ccwatch
+cargo build --release</code></pre>
+        <p>Запустите собранный бинарник командой для своей системы:</p>
+        <div class="platforms"><div><h3>Windows · PowerShell</h3><pre><code>.\target\release\ccwatch.exe</code></pre><p>Из корня проекта также работает обёртка <code>.\ccwatch.cmd</code>.</p></div><div><h3>macOS / Linux</h3><pre><code>./target/release/ccwatch</code></pre><p>Для интерактивного режима используйте обычный терминал.</p></div></div>
+        <h3>Команда из любой папки</h3>
+        <pre><code>cargo install --path .
+ccwatch --help</code></pre>
+        <p>Каталог Cargo bin должен быть в <code>PATH</code>: обычно <code>~/.cargo/bin</code>, на Windows — <code>%USERPROFILE%\.cargo\bin</code>. Rust-версии и её встроенному хуку Node.js не нужен. Файлы <code>ccwatch-hook.js</code> и каталог <code>prototype/</code> относятся к Node-варианту.</p>
+      </section>
+
+      <section id="start">
+        <p class="eyebrow">ШАГ 02</p><h2>Откройте первую сессию</h2>
+        <ol class="steps"><li><strong>Запустите задачу в Claude Code.</strong> Монитор ищет сессии на этой машине, в данных текущего пользователя.</li><li><strong>Откройте ccwatch во втором терминале.</strong> Список показывает запущенные сессии; новые находятся сверху.</li><li><strong>Выберите сессию стрелками ↑ / ↓.</strong> Нажмите Enter, чтобы открыть карточку. В ней видны статус, модель, план и последнее действие.</li><li><strong>Подключите хук по инструкции ниже.</strong> Он нужен для запросов плана, отправки советов и сообщений агенту.</li></ol>
+        <p class="note">Для первого запуска достаточно одной активной сессии. Если список пуст, перейдите к <a href="#troubleshooting">диагностике</a>: ccwatch зависит от локального реестра сессий Claude Code.</p>
+      </section>
+
+      <section id="hook">
+        <p class="eyebrow">ШАГ 03</p><h2>Подключите связь с агентом</h2>
+        <p>Хук — команда, которую Claude Code вызывает после использования инструмента. Через неё ccwatch передаёт запросы выбранной сессии. Для просмотра локальных данных подключать его не обязательно.</p>
+        <ol class="steps"><li>Сначала выберите постоянное расположение программы. При настройке сохраняется <strong>абсолютный путь к бинарнику</strong>.</li><li>В карточке сессии нажмите <kbd>s</kbd> и выберите совет <strong>«Хук ccwatch не подключён»</strong>. Если подключён старый Node-хук, появится предложение переключить его на программу.</li><li>Нажмите Enter. Прочитайте предлагаемое изменение <code>~/.claude/settings.json</code> и подтвердите клавишей <kbd>y</kbd>. Любая другая клавиша отменяет изменение.</li><li>В Claude Code проверьте регистрацию через <code>/hooks</code>. При необходимости перезапустите сессию, чтобы применить настройки.</li><li>Вернитесь в карточку ccwatch и нажмите <kbd>p</kbd>. Продолжите задачу в Claude Code и дождитесь вызова инструмента и ответа агента.</li></ol>
+        <div class="callout"><strong>Запрос не доставляется мгновенно.</strong><p>Он ждёт следующего события PostToolUse. Если агент простаивает, запрос продолжает ждать. Отметка доставки означает передачу контекста агенту; план или ответ появится после того, как агент его обработает.</p></div>
+        <p>В живом режиме с подключённым хуком монитор сам просит план, если сессия занята более 30 секунд и плана ещё нет. Отключить автоматический запрос: <code>ccwatch --no-ask</code>. Ручная клавиша <kbd>p</kbd> остаётся доступна.</p>
+        <p>Подключение хука меняет настройки Claude Code для пользователя. Не удаляйте другие хуки при ручном редактировании. Формат и поведение хуков проверяйте в <a href="https://code.claude.com/docs/en/hooks">документации Claude Code</a>.</p>
+      </section>
+
+      <section id="daily">
+        <p class="eyebrow">ШАГ 04</p><h2>Работайте с карточкой сессии</h2>
+        <h3>Следите за планом</h3><p><kbd>Enter</kbd> открывает полный план. <span class="green">✓</span> отмечает готовое, <span class="accent">▶</span> — текущий шаг. Используйте стрелки, PgUp / PgDn, Home / End. Оценки времени берутся из плана агента: прогноз не гарантирует точное время завершения. Если план не появился, запросите его через <kbd>p</kbd>.</p>
+        <h3>Читайте таблицу токенов</h3><p>«Выход» — токены ответов, «вход» — входные токены, «из кэша» — чтение кэшированного контекста. Работа главного агента и субагентов показана отдельно. «Контекст» помогает следить за размером контекста сессии. «Доля» рассчитывается по встроенным коэффициентам цены: это не счёт за API и не остаток лимита подписки.</p>
+        <h3>Применяйте советы</h3><p>Нажмите <kbd>s</kbd>, выберите совет и прочитайте описание. Enter отправляет совет агенту либо показывает изменение настройки для советов «для вас». <kbd>a</kbd> отправляет все доступные советы для агента. <kbd>u</kbd> открывает скрипт настройки, если он предусмотрен. Изменение выполняется только после показа правки и подтверждения <kbd>y</kbd>.</p>
+        <p>Для обратимых правок повторный запуск того же скрипта использует журнал изменений, чтобы вернуть прежнее значение. В списке советов можно видеть отправку, реакцию агента и оценку эффекта. Доставка совета не означает, что агент уже выполнил его.</p>
+        <h3>Скиллы, идеи и сообщения</h3><p><kbd>i</kbd> открывает обнаруженную историю скиллов: названия, количество вызовов и кто их вызывал. <kbd>b</kbd> открывает идеи по улучшению анализатора; Enter на этом экране отправляет вопрос агенту. <kbd>m</kbd> в карточке позволяет набрать собственное сообщение. Enter отправляет его, Esc отменяет, Ctrl+U очищает ввод. Сообщение тоже доставляется через хук.</p>
+        <h3>Выйдите или завершите сессию</h3><p><kbd>q</kbd> и Ctrl+C закрывают монитор, оставляя Claude Code работать. <kbd>x</kbd> в карточке завершает CLI-сессию с дочерними процессами после подтверждения <kbd>y</kbd>; текущая работа прерывается. Транскрипт сохраняется, продолжить можно через <code>claude --resume &lt;ID&gt;</code>. Десктопную сессию закрывайте в самом приложении Claude.</p>
+      </section>
+
+      <section id="commands"><h2>Команды запуска</h2><p>Примеры предполагают установленную команду <code>ccwatch</code>. В PowerShell её можно заменить на <code>.\target\release\ccwatch.exe</code>.</p>
+        <div class="table-wrap"><table><thead><tr><th>Команда</th><th>Результат</th></tr></thead><tbody>
+          <tr><td><code>ccwatch</code></td><td>Живой режим с обновлением примерно раз в секунду</td></tr>
+          <tr><td><code>ccwatch --once</code></td><td>Один снимок в консоль и выход</td></tr>
+          <tr><td><code>ccwatch --session X</code></td><td>Сессия по части имени или префиксу ID</td></tr>
+          <tr><td><code>ccwatch --session X --plan</code></td><td>Сразу полный план</td></tr>
+          <tr><td><code>ccwatch --session X --tips</code></td><td>Сразу советы</td></tr>
+          <tr><td><code>ccwatch --session X --skills</code></td><td>Сразу история скиллов</td></tr>
+          <tr><td><code>ccwatch --bell</code></td><td>Звуковой сигнал, когда сессия перестала быть занятой</td></tr>
+          <tr><td><code>ccwatch --no-ask</code></td><td>Отключить автоматическую просьбу о плане</td></tr>
+          <tr><td><code>ccwatch --help</code></td><td>Встроенная справка</td></tr>
+        </tbody></table></div>
+        <p>Если имя содержит пробелы, используйте кавычки: <code>ccwatch --session "my project"</code>. Для завершённой сессии укажите полный ID; просмотр зависит от наличия транскрипта на диске.</p>
+        <div class="code-title">Снимок в файл</div><pre><code>ccwatch --once &gt; snapshot.txt</code></pre><p>Без терминала на вводе или выводе программа сама переходит в режим снимка. Снимок может содержать названия задач и локальные пути — проверьте его перед публикацией.</p>
+      </section>
+
+      <section id="keys"><h2>Клавиши под рукой</h2><div class="table-wrap"><table><thead><tr><th>Экран</th><th>Клавиши</th><th>Действие</th></tr></thead><tbody>
+        <tr><td>Список</td><td>↑ / ↓ или j / k</td><td>Выбрать сессию</td></tr><tr><td>Список</td><td>Enter</td><td>Открыть карточку</td></tr>
+        <tr><td>Карточка</td><td>Enter</td><td>Полный план</td></tr><tr><td>Карточка</td><td>s / i / b</td><td>Советы / скиллы / идеи</td></tr><tr><td>Карточка</td><td>m</td><td>Написать сообщение</td></tr><tr><td>Выбранная сессия</td><td>p</td><td>Попросить план</td></tr><tr><td>Карточка</td><td>x, затем y</td><td>Завершить CLI-сессию</td></tr>
+        <tr><td>Советы</td><td>↑ / ↓, Enter</td><td>Выбрать и отправить совет или открыть правку</td></tr><tr><td>Советы</td><td>a / u</td><td>Отправить все советы для агента / открыть скрипт</td></tr><tr><td>Идеи</td><td>Enter</td><td>Запросить предложения агента</td></tr>
+        <tr><td>План / история / идеи</td><td>↑ / ↓, PgUp / PgDn</td><td>Прокрутка</td></tr><tr><td>План</td><td>Home / End</td><td>Начало / конец плана</td></tr><tr><td>Вложенный экран</td><td>Esc</td><td>Назад</td></tr><tr><td>Монитор</td><td>q / Ctrl+C</td><td>Выход (при наборе сообщения q вводит букву)</td></tr>
+      </tbody></table></div></section>
+
+      <section id="data"><h2>Где хранятся данные</h2><p><code>~</code> — домашняя папка пользователя, обычно <code>C:\Users\имя</code> на Windows. Монитор читает реестр сессий и транскрипты Claude Code, а запросы и журнал своих настроек хранит отдельно.</p>
+        <div class="table-wrap"><table><thead><tr><th>Путь</th><th>Назначение</th></tr></thead><tbody>
+          <tr><td><code>~/.claude/sessions/</code></td><td>Реестр запущенных сессий</td></tr><tr><td><code>~/.claude/projects/</code></td><td>Транскрипты сессий и субагентов</td></tr><tr><td><code>~/.claude/settings.json</code></td><td>Настройки Claude Code, включая PostToolUse</td></tr><tr><td><code>~/.ccwatch/ask/</code></td><td>Запросы, ожидающие хука</td></tr><tr><td><code>~/.ccwatch/done/</code></td><td>Отметки доставки</td></tr><tr><td><code>~/.ccwatch/plans/</code></td><td>Планы прежнего файлового формата</td></tr><tr><td><code>~/.ccwatch/settings-log.json</code></td><td>Журнал изменений для возврата настроек</td></tr><tr><td><code>~/.ccwatch/ideas.jsonl</code>, <code>ideas/</code></td><td>Собранные идеи и ответы агентов</td></tr>
+        </tbody></table></div>
+        <h3>Нестандартное расположение</h3><p><code>CLAUDE_CONFIG_DIR</code> меняет корень данных Claude Code, <code>CCWATCH_DIR</code> — рабочую папку монитора. У монитора и процесса хука должны быть одинаковые значения. Непустая переменная <code>NO_COLOR</code> отключает цвет.</p>
+        <div class="code-title">Пример PowerShell — замените пути своими</div><pre><code>$env:CLAUDE_CONFIG_DIR = 'D:\claude-config'
+$env:CCWATCH_DIR = 'D:\ccwatch-data'
+ccwatch</code></pre>
+      </section>
+
+      <section id="troubleshooting"><h2>Если что-то не работает</h2>
+        <details open><summary>Список сессий пуст</summary><p>Запустите локальную сессию Claude Code. Проверьте, что в <code>~/.claude/sessions/</code> есть записи и они относятся к работающим процессам. Сверьте пользователя и <code>CLAUDE_CONFIG_DIR</code>. Сессия другой машины не появится без её локальных данных. Формат реестра зависит от версии Claude Code.</p></details>
+        <details><summary>План или сообщение остаётся в ожидании</summary><p>Проверьте хук через <code>/hooks</code> в Claude Code, путь к бинарнику и окружение. Продолжите задачу: нужен вызов инструмента именно выбранной сессии. Доставка и ответ агента происходят в разное время. Автоматический запрос имеет срок ожидания 10 минут, ручной — до 12 часов.</p></details>
+        <details><summary>После перемещения программы хук перестал работать</summary><p>В настройках остался старый абсолютный путь. Запустите программу из нового постоянного места и подключите хук заново через советы. При ручном редактировании изменяйте только хук ccwatch.</p></details>
+        <details><summary>Терминал показывает снимок и сразу закрывает программу</summary><p>Живой режим включается только при терминале на вводе и выводе. Запустите без перенаправления и без <code>--once</code>. Для читаемого интерфейса увеличьте ширину и высоту окна.</p></details>
+        <details><summary>Не находится cargo или сборка требует linker</summary><p>Установите Rust, проверьте <code>cargo --version</code> и откройте новый терминал. На Windows с MSVC toolchain установите компоненты C++ и Windows SDK через Visual Studio Build Tools. Повторите <code>cargo build --release</code>.</p></details>
+        <details><summary>Совет доставлен, но изменений не видно</summary><p>Доставка подтверждает передачу запроса. Агент ещё должен обработать совет; часть советов выполняется пользователем через подтверждаемую правку настроек. Проверьте описание и статус совета.</p></details>
+        <p>Для сообщения о проблеме приложите команду запуска, ОС и обезличенный вывод <code>ccwatch --once</code>. <a href="https://github.com/SWDevStudio/ccwatch/issues">Открыть issue на GitHub ↗</a></p>
+      </section>
+
+      <section id="update"><h2>Обновление</h2><p>В папке исходников получите изменения и пересоберите программу. Сначала сохраните собственные изменения, если они есть.</p><pre><code>git pull --ff-only origin master
+cargo build --release</code></pre><p>При установке в Cargo bin обновите установленную команду:</p><pre><code>cargo install --path . --force</code></pre><p>Если расположение бинарника поменялось, перенастройте хук. Для проверки доступных команд используйте <code>ccwatch --help</code>.</p></section>
+      <footer><span>ccwatch · инструкция к версии 0.2.0</span><a href="https://github.com/SWDevStudio/ccwatch">Исходники ↗</a><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages">О GitHub Pages ↗</a></footer>
+    </main>
+  </div>
+</body>
+</html>
